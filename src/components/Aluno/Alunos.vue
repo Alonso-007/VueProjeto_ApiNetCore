@@ -1,7 +1,9 @@
 <template>
   <div>
-    <titulo texto="Aluno" />
-    <div>
+    <titulo
+      :texto="professorId ? 'Professor: ' + professor.nome : 'Todos os Alunos'"
+    />
+    <div v-if="professorId">
       <input
         type="text"
         placeholder="Nome do Aluno"
@@ -20,9 +22,18 @@
       <tbody v-if="alunos.length">
         <tr v-for="(aluno, index) in alunos" :key="index">
           <!-- <td>{{index + 1}}</td>  -->
-          <td>{{ aluno.id }}</td>
-          <td>{{ aluno.nome }} {{ aluno.sobrenome }}</td>
-          <td>
+          <td class="colPequeno">{{ aluno.id }}</td>
+          <router-link :to="`/alunoDetalhe/${aluno.id}`" custom v-slot="{ navigate }">
+            <td
+              @click="navigate"
+              @keypress.enter="navigate"
+              role="link"
+              style="cursor: pointer"
+            >
+              {{ aluno.nome }} {{ aluno.sobrenome }}
+            </td>
+          </router-link>
+          <td class="colPequeno">
             <button class="btn btn_Danger" @click="remover(aluno)">
               Remover
             </button>
@@ -46,6 +57,8 @@ export default {
   data() {
     return {
       titulo: "Aluno",
+      professorId: this.$route.params.profId,
+      professor: {},
       nome: "",
       alunos: [
         /*{id: 1, nome: "Aluno 1", sobrenome: 'Xavier'},
@@ -55,9 +68,17 @@ export default {
     };
   },
   created() {
-    this.$axios
-      .get("http://localhost:3000/alunos")
-      .then((alunos) => (this.alunos = alunos.data));
+    console.log(this.professorId);
+    if (this.professorId) {
+      this.carregarProfessores();
+      this.$axios
+        .get("http://localhost:3000/alunos?professor.id=" + this.professorId)
+        .then((alunos) => (this.alunos = alunos.data));
+    } else {
+      this.$axios
+        .get("http://localhost:3000/alunos")
+        .then((alunos) => (this.alunos = alunos.data));
+    }
   },
   props: {},
   methods: {
@@ -65,6 +86,10 @@ export default {
       let _aluno = {
         nome: this.nome,
         sobrenome: "",
+        professor: {
+          id: this.professor.id,
+          nome: this.professor.nome,
+        },
       };
 
       this.$axios
@@ -76,7 +101,7 @@ export default {
           this.nome = "";
         });
 
-      console.log(_aluno);
+      //console.log(_aluno);
       //this.alunos.forEach(aluno => { console.log(aluno);  });
     },
     remover(aluno) {
@@ -88,6 +113,13 @@ export default {
           this.alunos.splice(indice, 1);
         });
     },
+    carregarProfessores() {
+      this.$axios
+        .get("http://localhost:3000/professores/" + this.professorId)
+        .then((professor) => {
+          this.professor = professor.data;
+        });
+    },
   },
 };
 </script>
@@ -95,7 +127,7 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 input {
-  /*width: calc(100% - 150px);*/
+  width: calc(100% - 195px);
   border: 0;
   padding: 20px;
   font-size: 1.3em;
@@ -104,7 +136,7 @@ input {
 }
 
 .btnInput {
-  /*width: 150px;*/
+  width: 150px;
   border: 0px;
   padding: 20px;
   font-size: 1.3em;
